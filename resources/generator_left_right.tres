@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="GeneratorConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/walls/generator_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+type = 2
+display_name = "Left/Right"
+arms = [Vector2(-1, 0), Vector2(1, 0)]
+build_speed = 5.0
+preview_color = Color(1.0, 0.8, 0.3, 0.5)
+is_unlimited = false
+wall_color = Color(1.0, 0.95, 0.7, 1)

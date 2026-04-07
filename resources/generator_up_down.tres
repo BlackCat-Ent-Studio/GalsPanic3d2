@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="GeneratorConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/walls/generator_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+type = 1
+display_name = "Up/Down"
+arms = [Vector2(0, 1), Vector2(0, -1)]
+build_speed = 5.0
+preview_color = Color(0.3, 1.0, 0.5, 0.5)
+is_unlimited = false
+wall_color = Color(0.7, 1.0, 0.8, 1)

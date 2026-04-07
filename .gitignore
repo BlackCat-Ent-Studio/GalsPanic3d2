@@ -1,0 +1,25 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Environment variables
+.env*
+!.env.example
+
+# Python
+__pycache__
+
+# ClaudeKit
+plans/**/*
+!plans/templates/*
+prompt.md
+ck.md
+.claude/agent-memory/
+.claude/hooks/.logs/
+.claude/settings.bak.json
+
+# Git worktrees
+worktrees/
+
+# External repos
+external/

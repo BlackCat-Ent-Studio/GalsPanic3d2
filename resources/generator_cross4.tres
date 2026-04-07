@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="GeneratorConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/walls/generator_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+type = 0
+display_name = "Cross"
+arms = [Vector2(0, 1), Vector2(0, -1), Vector2(-1, 0), Vector2(1, 0)]
+build_speed = 5.0
+preview_color = Color(0.3, 0.8, 1.0, 0.5)
+is_unlimited = true
+wall_color = Color(0.9, 0.9, 0.95, 1)

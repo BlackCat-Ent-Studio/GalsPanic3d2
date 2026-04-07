@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3 uid="uid://cgameplay001"]
+
+[ext_resource type="Script" path="res://scripts/board/board.gd" id="1_board"]
+[ext_resource type="Script" path="res://scripts/gameplay_controller.gd" id="2_controller"]
+
+[node name="Gameplay" type="Node3D"]
+
+[node name="Board" type="Node3D" parent="."]
+script = ExtResource("1_board")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 0, 20, 11.547)
+fov = 45.0
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 10, 0)
+shadow_enabled = true
+
+[node name="AmbientLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 10, 0)
+light_color = Color(0.3, 0.3, 0.4, 1)
+light_energy = 0.3
+
+[node name="GameplayController" type="Node3D" parent="."]
+script = ExtResource("2_controller")
+board_path = NodePath("../Board")
+camera_path = NodePath("../Camera3D")
