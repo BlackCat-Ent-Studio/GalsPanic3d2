@@ -80,8 +80,22 @@ func _spawn_build_operation(board_pos: Vector2) -> void:
 	op.operation_failed.connect(_on_operation_failed)
 
 
-func _on_operation_completed(_op: BuildOperation) -> void:
-	pass  # Phase 3 will hook territory claiming here
+func _on_operation_completed(op: BuildOperation) -> void:
+	# Collect completed arm endpoints
+	var endpoints := PackedVector2Array()
+	for arm: BuildArm in op.completed_arms:
+		endpoints.append(arm.end_pos)
+
+	# Get fireball positions (empty for now, Phase 4 adds fireballs)
+	var fireball_positions := PackedVector2Array()
+
+	# Claim territory via star-split + Qix rule
+	board.territory_claimer.claim_territory(
+		board.wall_registry,
+		op.generator_position,
+		endpoints,
+		fireball_positions
+	)
 
 
 func _on_operation_failed(_op: BuildOperation) -> void:

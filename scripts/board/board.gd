@@ -1,18 +1,31 @@
 extends Node3D
 class_name Board
-## Board node: initializes wall registry, creates ground mesh, manages debug draw.
+## Board node: initializes wall registry, ground mesh with claim shader, claim tiles.
 
 const BOUNDS_MIN := Vector2(-10.0, -10.0)
 const BOUNDS_MAX := Vector2(10.0, 10.0)
 const BOARD_SIZE := 20.0
 
 var wall_registry: WallRegistry
+var claim_texture: ClaimTexture
+var territory_claimer: TerritoryClaimer
+
+var _ground_shader_mat: ShaderMaterial
+var _claim_tile_spawner: ClaimTileSpawner
 
 
 func _ready() -> void:
 	wall_registry = WallRegistry.new()
 	wall_registry.initialize_board(BOUNDS_MIN, BOUNDS_MAX)
+	claim_texture = ClaimTexture.new()
+	territory_claimer = TerritoryClaimer.new()
 	_create_ground_mesh()
+	_create_claim_tile_spawner()
+	# Initial texture render
+	claim_texture.regenerate(wall_registry.regions, wall_registry.segments)
+	# Listen for claim events to regenerate texture
+	GameEvents.regions_claimed_with_data.connect(_on_regions_claimed)
+	# NOTE: Don't regenerate on every segment — too expensive. Only on claim.
 
 
 func _create_ground_mesh() -> void:
@@ -22,12 +35,31 @@ func _create_ground_mesh() -> void:
 	plane.size = Vector2(BOARD_SIZE, BOARD_SIZE)
 	mesh_instance.mesh = plane
 
-	# Basic gray material for now (will be replaced by claim shader later)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.15, 0.18, 0.22)
-	mesh_instance.material_override = mat
+	# Claim shader material
+	var shader := preload("res://shaders/ground_claim.gdshader")
+	_ground_shader_mat = ShaderMaterial.new()
+	_ground_shader_mat.shader = shader
+	_ground_shader_mat.set_shader_parameter("claim_mask", claim_texture.get_texture())
+	_ground_shader_mat.set_shader_parameter("grid_origin", BOUNDS_MIN)
+	_ground_shader_mat.set_shader_parameter("grid_size", Vector2(BOARD_SIZE, BOARD_SIZE))
+	mesh_instance.material_override = _ground_shader_mat
 
 	add_child(mesh_instance)
+
+
+func _create_claim_tile_spawner() -> void:
+	_claim_tile_spawner = ClaimTileSpawner.new()
+	_claim_tile_spawner.name = "ClaimTiles"
+	add_child(_claim_tile_spawner)
+
+
+func _on_regions_claimed(_claimed: Array, _all: Array) -> void:
+	claim_texture.regenerate(wall_registry.regions, wall_registry.segments)
+
+
+## Force a texture refresh (called externally if needed).
+func refresh_claim_texture() -> void:
+	claim_texture.regenerate(wall_registry.regions, wall_registry.segments)
 
 
 ## Convert board 2D coords (XZ) to 3D world position.
