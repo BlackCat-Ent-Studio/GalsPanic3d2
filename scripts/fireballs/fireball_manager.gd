@@ -35,6 +35,9 @@ func get_fireball_positions() -> PackedVector2Array:
 
 ## Check arm-fireball collisions against all active build operations.
 func check_arm_collisions(active_builds_node: Node) -> void:
+	# IronGenerator power-up: arms ignore fireballs
+	if GameManager.power_up_manager.is_iron_active():
+		return
 	for child in get_children():
 		var fb := child as Fireball
 		if fb == null:

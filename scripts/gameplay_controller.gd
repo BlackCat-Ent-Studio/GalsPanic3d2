@@ -1,6 +1,6 @@
 extends Node3D
 class_name GameplayController
-## Wires together Board, InputHandler, WallPreview, BuildOperations, and Fireballs.
+## Wires Board, Input, Preview, Builds, Fireballs, DropItems together.
 
 @export_node_path("Node3D") var board_path: NodePath
 @export_node_path("Camera3D") var camera_path: NodePath
@@ -12,6 +12,7 @@ var _input_handler: InputHandler
 var _wall_preview: WallPreview
 var _active_builds: Node3D
 var _fireball_manager: FireballManager
+var _drop_spawner: DropItemSpawner
 
 
 func _ready() -> void:
@@ -21,12 +22,14 @@ func _ready() -> void:
 	_setup_wall_preview()
 	_setup_active_builds()
 	_setup_fireball_manager()
-	# Spawn default fireballs for testing (Phase 5 will use level config)
-	_spawn_test_fireballs()
+	_setup_drop_spawner()
+	# Start level
+	GameManager.start_level(GameManager.current_level_index)
+	var entries: Array = GameManager.get_spawn_entries_for_manager()
+	_fireball_manager.spawn_fireballs(entries, GameManager.current_level_index)
 
 
 func _physics_process(_delta: float) -> void:
-	# Check fireball-arm collisions each physics frame
 	if _fireball_manager and _active_builds:
 		_fireball_manager.check_arm_collisions(_active_builds)
 
@@ -62,12 +65,11 @@ func _setup_fireball_manager() -> void:
 	_fireball_manager.setup(board.wall_registry)
 
 
-func _spawn_test_fireballs() -> void:
-	var red_config := preload("res://resources/fireball_red.tres")
-	var spawn_entries: Array = [
-		{"config": red_config, "count": 2}
-	]
-	_fireball_manager.spawn_fireballs(spawn_entries, 1)
+func _setup_drop_spawner() -> void:
+	_drop_spawner = DropItemSpawner.new()
+	_drop_spawner.name = "DropItems"
+	add_child(_drop_spawner)
+	_drop_spawner.setup(board.wall_registry, GameManager.inventory)
 
 
 func _on_drag_started(board_pos: Vector2) -> void:
@@ -80,6 +82,12 @@ func _on_drag_updated(board_pos: Vector2) -> void:
 
 func _on_drag_ended(board_pos: Vector2) -> void:
 	_wall_preview.hide_preview()
+	if GameManager.state != GameManager.State.PLAYING:
+		return
+	# Check inventory
+	var inv := GameManager.inventory
+	if not inv.is_available(inv.selected_type):
+		inv.select_type(GeneratorInventory.TYPE_CROSS4)
 	_spawn_build_operation(board_pos)
 
 
@@ -89,41 +97,45 @@ func _on_drag_cancelled() -> void:
 
 func _update_preview(board_pos: Vector2) -> void:
 	var is_valid := board.wall_registry.is_point_in_playable_area(board_pos)
-	_wall_preview.show_preview(
-		board_pos,
-		_input_handler.active_config,
-		board.wall_registry,
-		is_valid
-	)
+	var config: Resource = GameManager.inventory.get_config_for_selected()
+	_wall_preview.show_preview(board_pos, config, board.wall_registry, is_valid)
 
 
 func _spawn_build_operation(board_pos: Vector2) -> void:
+	var inv := GameManager.inventory
+	var config: Resource = inv.get_config_for_selected()
+	inv.consume(inv.selected_type)
+
+	# Apply power-up speed multiplier
+	var speed_mult := GameManager.power_up_manager.get_speed_multiplier()
+	GameManager.power_up_manager.on_build_started()
+
 	var op := BuildOperation.new()
 	_active_builds.add_child(op)
-	op.start(board_pos, _input_handler.active_config, board.wall_registry)
+	op.start(board_pos, config, board.wall_registry)
+
+	# Apply speed multiplier to arms
+	if speed_mult > 1.0:
+		for arm: BuildArm in op.arms:
+			arm.build_speed *= speed_mult
+
 	op.operation_completed.connect(_on_operation_completed)
 	op.operation_failed.connect(_on_operation_failed)
 
 
 func _on_operation_completed(op: BuildOperation) -> void:
+	GameManager.power_up_manager.on_build_finished()
+
 	var endpoints := PackedVector2Array()
 	for arm: BuildArm in op.completed_arms:
 		endpoints.append(arm.end_pos)
 
-	# Get live fireball positions for Qix rule
 	var fireball_positions := _fireball_manager.get_fireball_positions()
-
-	# Claim territory via star-split + Qix rule
 	board.territory_claimer.claim_territory(
-		board.wall_registry,
-		op.generator_position,
-		endpoints,
-		fireball_positions
+		board.wall_registry, op.generator_position, endpoints, fireball_positions
 	)
-
-	# Remove fireballs trapped in claimed regions
 	_fireball_manager.remove_fireballs_in_claimed()
 
 
 func _on_operation_failed(_op: BuildOperation) -> void:
-	pass  # Phase 5 will handle game over logic
+	GameManager.power_up_manager.on_build_finished()
