@@ -135,7 +135,7 @@ func _finalize_failure() -> void:
 ## Called by fireball system to damage an arm.
 func damage_arm_at(fireball_pos: Vector2, damage_radius: float = 0.25) -> bool:
 	for arm in arms:
-		if arm.is_completed or arm.is_destroyed:
+		if not is_instance_valid(arm) or arm.is_completed or arm.is_destroyed:
 			continue
 		var tip := arm.get_current_tip()
 		# Check distance from fireball to arm line

@@ -1,6 +1,6 @@
 extends Node3D
 class_name GameplayController
-## Wires together Board, InputHandler, WallPreview, and BuildOperations.
+## Wires together Board, InputHandler, WallPreview, BuildOperations, and Fireballs.
 
 @export_node_path("Node3D") var board_path: NodePath
 @export_node_path("Camera3D") var camera_path: NodePath
@@ -11,6 +11,7 @@ var camera: Camera3D
 var _input_handler: InputHandler
 var _wall_preview: WallPreview
 var _active_builds: Node3D
+var _fireball_manager: FireballManager
 
 
 func _ready() -> void:
@@ -19,6 +20,15 @@ func _ready() -> void:
 	_setup_input_handler()
 	_setup_wall_preview()
 	_setup_active_builds()
+	_setup_fireball_manager()
+	# Spawn default fireballs for testing (Phase 5 will use level config)
+	_spawn_test_fireballs()
+
+
+func _physics_process(_delta: float) -> void:
+	# Check fireball-arm collisions each physics frame
+	if _fireball_manager and _active_builds:
+		_fireball_manager.check_arm_collisions(_active_builds)
 
 
 func _setup_input_handler() -> void:
@@ -43,6 +53,21 @@ func _setup_active_builds() -> void:
 	_active_builds = Node3D.new()
 	_active_builds.name = "ActiveBuilds"
 	add_child(_active_builds)
+
+
+func _setup_fireball_manager() -> void:
+	_fireball_manager = FireballManager.new()
+	_fireball_manager.name = "Fireballs"
+	add_child(_fireball_manager)
+	_fireball_manager.setup(board.wall_registry)
+
+
+func _spawn_test_fireballs() -> void:
+	var red_config := preload("res://resources/fireball_red.tres")
+	var spawn_entries: Array = [
+		{"config": red_config, "count": 2}
+	]
+	_fireball_manager.spawn_fireballs(spawn_entries, 1)
 
 
 func _on_drag_started(board_pos: Vector2) -> void:
@@ -81,13 +106,12 @@ func _spawn_build_operation(board_pos: Vector2) -> void:
 
 
 func _on_operation_completed(op: BuildOperation) -> void:
-	# Collect completed arm endpoints
 	var endpoints := PackedVector2Array()
 	for arm: BuildArm in op.completed_arms:
 		endpoints.append(arm.end_pos)
 
-	# Get fireball positions (empty for now, Phase 4 adds fireballs)
-	var fireball_positions := PackedVector2Array()
+	# Get live fireball positions for Qix rule
+	var fireball_positions := _fireball_manager.get_fireball_positions()
 
 	# Claim territory via star-split + Qix rule
 	board.territory_claimer.claim_territory(
@@ -96,6 +120,9 @@ func _on_operation_completed(op: BuildOperation) -> void:
 		endpoints,
 		fireball_positions
 	)
+
+	# Remove fireballs trapped in claimed regions
+	_fireball_manager.remove_fireballs_in_claimed()
 
 
 func _on_operation_failed(_op: BuildOperation) -> void:
