@@ -124,6 +124,10 @@ func _finalize_failure() -> void:
 	_is_finalized = true
 	GameEvents.generator_destroyed.emit()
 	operation_failed.emit(self)
+	# Spawn explosion VFX
+	var explosion := ExplosionEffect.new()
+	explosion.setup(Board.board_to_world(generator_position, 0.3))
+	get_tree().current_scene.add_child(explosion)
 	# Fade out and remove
 	var tween := create_tween()
 	if _generator_mesh and _generator_mesh.material_override:

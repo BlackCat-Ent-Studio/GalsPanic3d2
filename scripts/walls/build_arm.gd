@@ -104,11 +104,16 @@ func start_dissolve(duration: float = 0.5) -> void:
 	is_destroyed = true
 	is_completed = false
 	set_process(false)
-	# Simple fade-out
-	if _wall_material:
-		_wall_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	# Dissolve shader effect
+	if _mesh:
+		var dissolve_shader := preload("res://shaders/arm_dissolve.gdshader")
+		var shader_mat := ShaderMaterial.new()
+		shader_mat.shader = dissolve_shader
+		shader_mat.set_shader_parameter("base_color", Color(0.7, 0.85, 1.0))
+		shader_mat.set_shader_parameter("dissolve_amount", 0.0)
+		_mesh.material_override = shader_mat
 		var tween := create_tween()
-		tween.tween_property(_wall_material, "albedo_color:a", 0.0, duration)
+		tween.tween_property(shader_mat, "shader_parameter/dissolve_amount", 1.0, duration)
 		tween.tween_callback(_on_dissolve_finished)
 
 
