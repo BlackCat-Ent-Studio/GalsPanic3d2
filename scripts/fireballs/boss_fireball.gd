@@ -31,8 +31,12 @@ var _ghost_state: GhostState = GhostState.DRIFT
 var _ghost_timer: float = 0.0
 var _dissolve_target: WallSegment = null
 var _drift_time: float = 0.0
+var _ghost_seek_timer: float = 0.0
+var _ghost_seek_target: Vector2 = Vector2.ZERO
+var _ghost_has_target: bool = false
 const DISSOLVE_DELAY := 1.5
 const GHOST_DISSOLVE_COOLDOWN := 2.0
+const GHOST_SEEK_INTERVAL := 3.0
 
 # Ghost visibility (existing mechanic)
 var _visibility_timer: float = 0.0
@@ -212,10 +216,24 @@ func _ghost_process(delta: float) -> void:
 
 
 func _ghost_drift(delta: float) -> void:
-	# Smooth sine-wave drift
 	_drift_time += delta
 	_bounce_cooldown = maxf(0.0, _bounce_cooldown - delta)
-	if _bounce_cooldown <= 0.0:
+
+	# Periodically seek nearest unclaimed wall
+	_ghost_seek_timer += delta
+	if _ghost_seek_timer >= GHOST_SEEK_INTERVAL:
+		_ghost_seek_timer = 0.0
+		_ghost_acquire_target()
+
+	# Steer toward target if we have one, otherwise sine-wave drift
+	if _ghost_has_target and _bounce_cooldown <= 0.0:
+		var to_target := (_ghost_seek_target - board_position).normalized()
+		# Blend toward target direction
+		_direction = _direction.lerp(to_target, 2.0 * delta).normalized()
+		# Clear target when close enough
+		if board_position.distance_to(_ghost_seek_target) < 1.0:
+			_ghost_has_target = false
+	elif _bounce_cooldown <= 0.0:
 		var wave := sin(_drift_time * 1.5) * 0.8
 		_direction = _direction.rotated(wave * delta)
 
@@ -224,6 +242,25 @@ func _ghost_drift(delta: float) -> void:
 	# Check wall collision — phase through unclaimed walls, bounce off claimed
 	_ghost_check_walls()
 	_clamp_to_bounds()
+
+
+func _ghost_acquire_target() -> void:
+	var candidates := _wall_registry.find_segments_bordering_unclaimed()
+	if candidates.is_empty():
+		_ghost_has_target = false
+		return
+	# Pick closest non-boundary segment
+	var best_seg: WallSegment = null
+	var best_dist := INF
+	for seg in candidates:
+		var mid := (seg.start + seg.end) * 0.5
+		var dist := board_position.distance_squared_to(mid)
+		if dist < best_dist:
+			best_dist = dist
+			best_seg = seg
+	if best_seg:
+		_ghost_seek_target = (best_seg.start + best_seg.end) * 0.5
+		_ghost_has_target = true
 
 
 func _ghost_check_walls() -> void:
