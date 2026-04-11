@@ -17,6 +17,8 @@ var _mesh: MeshInstance3D
 ## Optional lifespan in seconds. <= 0 means infinite (default).
 var lifespan: float = 0.0
 var _age: float = 0.0
+## If true, fireball dies when entering claimed territory.
+var dies_in_claimed: bool = false
 
 # Curve state: gradually rotate direction each frame
 var _curve_angular_speed: float = 0.0
@@ -89,6 +91,13 @@ func _physics_process(delta: float) -> void:
 			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			var fade := 1.0 - (_age - (lifespan - 2.0)) / 2.0
 			mat.albedo_color.a = maxf(fade, 0.1)
+
+	# Die if in claimed territory
+	if dies_in_claimed:
+		for region in _wall_registry.regions:
+			if region.is_claimed and region.contains_point(board_position):
+				_start_death_fade()
+				return
 
 	previous_position = board_position
 

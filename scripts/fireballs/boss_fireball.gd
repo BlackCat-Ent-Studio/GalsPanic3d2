@@ -332,12 +332,17 @@ func _ghost_land_mini(landing: Vector2) -> void:
 	var summon_t: String = config.summon_type
 	var cfg_path: String = type_configs.get(summon_t, type_configs["red"])
 	var mini_cfg: Resource = load(cfg_path)
+	# If landing in claimed territory, mini dies immediately
+	if _is_in_claimed_territory(landing):
+		_shake_camera()
+		return
+
 	var mini := Fireball.new()
 	_fireball_manager.add_child(mini)
 	mini.setup(mini_cfg, landing, _wall_registry, 0)
 	mini.lifespan = 15.0  # Ghost minis die after 15 seconds
+	mini.dies_in_claimed = true  # Die if entering claimed territory
 	_spawned_minis.append(mini)
-	# Impact VFX
 	_shake_camera()
 
 
@@ -368,6 +373,14 @@ func _ghost_vanish(delta: float) -> void:
 # =============================================================================
 # SHARED UTILITIES
 # =============================================================================
+
+## Check if a board position is inside any claimed region.
+func _is_in_claimed_territory(pos: Vector2) -> bool:
+	for region in _wall_registry.regions:
+		if region.is_claimed and region.contains_point(pos):
+			return true
+	return false
+
 
 ## Filter dead fireball refs. Returns typed Array[Fireball].
 func _clean_minis(arr: Array[Fireball]) -> Array[Fireball]:
