@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="LevelConfig" load_steps=2 format=3 uid="uid://hg2wcl63rhqe"]
+
+[ext_resource type="Script" uid="uid://cm401712h3xiq" path="res://scripts/levels/level_config.gd" id="1_fq8ci"]
+
+[resource]
+script = ExtResource("1_fq8ci")
+fireball_spawn_entries = [{
+"count": 1,
+"speed_level": 0,
+"type": "boss_tank"
+}, {
+"count": 1,
+"speed_level": 0,
+"type": "boss_ghost"
+}]
+fireball_placements = [{
+"position": Vector2(-0.5, -4.607143),
+"radius": 0.25,
+"speed": 3.0,
+"type": "boss_tank"
+}, {
+"position": Vector2(2.4285707, 3.3214283),
+"radius": 0.25,
+"speed": 3.0,
+"type": "boss_ghost"
+}]

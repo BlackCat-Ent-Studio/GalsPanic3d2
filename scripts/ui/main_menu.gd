@@ -49,6 +49,9 @@ func _create_ui() -> void:
 	_btn_continue = _make_button("Continue", center)
 	_btn_continue.pressed.connect(_on_continue)
 
+	var btn_levels := _make_button("Select Level", center)
+	btn_levels.pressed.connect(_on_select_level)
+
 	_btn_settings = _make_button("Settings", center)
 	_btn_settings.pressed.connect(_on_settings)
 
@@ -72,6 +75,10 @@ func _on_continue() -> void:
 	GameManager.current_level_index = GameManager.save.get_current_level()
 	GameManager.coins = GameManager.save.get_coins()
 	SceneManager.change_scene("res://scenes/gameplay.tscn")
+
+
+func _on_select_level() -> void:
+	SceneManager.change_scene("res://scenes/level_select.tscn")
 
 
 func _on_settings() -> void:

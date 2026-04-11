@@ -4,6 +4,11 @@ extends RefCounted
 
 
 static func generate(level_index: int) -> LevelConfig:
+	# Check for hand-crafted level first
+	var crafted := _try_load_crafted(level_index)
+	if crafted:
+		return crafted
+	# Fall back to procedural generation
 	var config := LevelConfig.new()
 	config.level_number = level_index + 1
 	var zone: int = level_index / 5
@@ -60,3 +65,13 @@ static func _generate_fireball_entries(level_index: int, total: int, speed_level
 			entries.append({"type": type_key, "count": 1, "speed_level": speed_level})
 
 	return entries
+
+
+## Try loading a hand-crafted level .tres file for this index.
+static func _try_load_crafted(level_index: int) -> LevelConfig:
+	var path := "res://resources/levels/level_%02d.tres" % (level_index + 1)
+	if ResourceLoader.exists(path):
+		var res: Resource = ResourceLoader.load(path)
+		if res is LevelConfig:
+			return res
+	return null

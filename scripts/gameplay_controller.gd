@@ -26,8 +26,14 @@ func _ready() -> void:
 	_setup_drop_spawner()
 	# Start level
 	GameManager.start_level(GameManager.current_level_index)
-	var entries: Array = GameManager.get_spawn_entries_for_manager()
-	_fireball_manager.spawn_fireballs(entries, GameManager.current_level_index)
+	# Use positioned placements if available, otherwise legacy spawn entries
+	var level_cfg: LevelConfig = GameManager.current_level_config
+	if level_cfg and not level_cfg.fireball_placements.is_empty():
+		_fireball_manager.spawn_from_placements(
+			level_cfg.fireball_placements, GameManager.current_level_index)
+	else:
+		var entries: Array = GameManager.get_spawn_entries_for_manager()
+		_fireball_manager.spawn_fireballs(entries, GameManager.current_level_index)
 
 
 func _physics_process(_delta: float) -> void:

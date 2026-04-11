@@ -21,6 +21,10 @@ GameEvents="*res://scripts/autoload/game_events.gd"
 GameManager="*res://scripts/autoload/game_manager.gd"
 SceneManager="*res://scripts/autoload/scene_manager.gd"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/level_editor/plugin.cfg")
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

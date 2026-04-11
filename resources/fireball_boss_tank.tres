@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="FireballConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/fireballs/fireball_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+pattern = 0
+display_name = "Boss Tank"
+base_speed = 2.0
+radius = 0.5
+color = Color(0.8, 0.1, 0.9, 1)
+curve_radius = 3.0
+curve_ccw = false
+zigzag_interval = 1.0
+zigzag_angle = 45.0
+speed_scale_per_level = 0.03
+curve_radius_scale = -0.1
+zigzag_interval_scale = -0.03
+is_boss = true
+boss_type = 1
+summon_interval = 8.0
+summon_type = "red"
+max_summons = 3
+invisible_on_time = 10.0
+invisible_off_time = 5.0

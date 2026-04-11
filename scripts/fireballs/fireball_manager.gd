@@ -23,6 +23,33 @@ func spawn_fireballs(spawn_entries: Array, level: int) -> void:
 			fb.setup(cfg, pos, _wall_registry, level)
 
 
+## Spawn fireballs from positioned placements: [{type, position, speed, radius}]
+func spawn_from_placements(placements: Array, level: int) -> void:
+	var type_configs := {
+		"red": preload("res://resources/fireball_red.tres"),
+		"yellow": preload("res://resources/fireball_yellow.tres"),
+		"white": preload("res://resources/fireball_white.tres"),
+		"boss_tank": preload("res://resources/fireball_boss_tank.tres"),
+		"boss_ghost": preload("res://resources/fireball_boss_ghost.tres"),
+	}
+	for p: Dictionary in placements:
+		var type_key: String = p["type"]
+		var cfg: Resource = type_configs.get(type_key)
+		if cfg == null:
+			continue
+		var pos: Vector2 = p["position"]
+		var is_boss: bool = type_key.begins_with("boss")
+		if is_boss:
+			var boss := BossFireball.new()
+			add_child(boss)
+			boss.setup(cfg, pos, _wall_registry, level)
+			boss.set_fireball_manager(self)
+		else:
+			var fb := Fireball.new()
+			add_child(fb)
+			fb.setup(cfg, pos, _wall_registry, level)
+
+
 ## Get all active fireball board positions (for Qix rule).
 func get_fireball_positions() -> PackedVector2Array:
 	var positions := PackedVector2Array()
