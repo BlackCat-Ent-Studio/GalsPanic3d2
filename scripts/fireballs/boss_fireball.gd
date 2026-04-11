@@ -339,6 +339,7 @@ func _ghost_land_mini(landing: Vector2) -> void:
 	var mini := Fireball.new()
 	_fireball_manager.add_child(mini)
 	mini.setup(mini_cfg, landing, _wall_registry, 0)
+	mini.lifespan = 15.0  # Ghost minis die after 15 seconds
 	_spawned_minis.append(mini)
 	# Impact VFX
 	_shake_camera()

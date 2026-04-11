@@ -14,6 +14,10 @@ var _wall_registry: WallRegistry
 var _direction: Vector2 = Vector2.RIGHT
 var _mesh: MeshInstance3D
 
+## Optional lifespan in seconds. <= 0 means infinite (default).
+var lifespan: float = 0.0
+var _age: float = 0.0
+
 # Curve state: gradually rotate direction each frame
 var _curve_angular_speed: float = 0.0
 
@@ -73,6 +77,19 @@ func _create_trail() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Lifespan check
+	if lifespan > 0.0:
+		_age += delta
+		if _age >= lifespan:
+			_start_death_fade()
+			return
+		# Fade out during last 2 seconds
+		if _age >= lifespan - 2.0 and _mesh and _mesh.material_override:
+			var mat: StandardMaterial3D = _mesh.material_override
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			var fade := 1.0 - (_age - (lifespan - 2.0)) / 2.0
+			mat.albedo_color.a = maxf(fade, 0.1)
+
 	previous_position = board_position
 
 	# Update direction based on pattern (skip during bounce cooldown)
@@ -175,3 +192,13 @@ func _clamp_to_bounds() -> void:
 		elif config.pattern == 2:
 			_zigzag_base_angle = _direction.angle()
 			_zigzag_time = 0.0
+
+
+func _start_death_fade() -> void:
+	set_physics_process(false)
+	if _mesh:
+		var tween := create_tween()
+		tween.tween_property(_mesh, "scale", Vector3.ZERO, 0.3).set_ease(Tween.EASE_IN)
+		tween.tween_callback(queue_free)
+	else:
+		queue_free()
