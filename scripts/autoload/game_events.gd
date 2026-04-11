@@ -28,6 +28,10 @@ signal drag_started()
 signal arm_destroyed()
 signal generator_destroyed()
 
+# Wall destruction (boss mechanics)
+signal wall_segment_destroyed(segment: RefCounted)
+signal region_unclaimed(region: RefCounted)
+
 # Fireballs
 signal fireball_bounced(fireball: Node, hit_point: Vector2)
 signal fireball_collision(a: Node, b: Node)

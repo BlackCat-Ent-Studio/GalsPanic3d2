@@ -25,9 +25,10 @@ func _ready() -> void:
 	_create_reveal_screen()
 	# Initial texture render
 	claim_texture.regenerate(wall_registry.regions, wall_registry.segments)
-	# Listen for claim events to regenerate texture
+	# Listen for claim events and wall destruction to regenerate texture
 	GameEvents.regions_claimed_with_data.connect(_on_regions_claimed)
-	# NOTE: Don't regenerate on every segment — too expensive. Only on claim.
+	GameEvents.wall_segment_destroyed.connect(_on_segment_destroyed)
+	GameEvents.region_unclaimed.connect(_on_region_unclaimed)
 
 
 func _create_ground_mesh() -> void:
@@ -63,6 +64,14 @@ func _create_reveal_screen() -> void:
 
 
 func _on_regions_claimed(_claimed: Array, _all: Array) -> void:
+	claim_texture.regenerate(wall_registry.regions, wall_registry.segments)
+
+
+func _on_segment_destroyed(_segment: RefCounted) -> void:
+	claim_texture.regenerate(wall_registry.regions, wall_registry.segments)
+
+
+func _on_region_unclaimed(_region: RefCounted) -> void:
 	claim_texture.regenerate(wall_registry.regions, wall_registry.segments)
 
 

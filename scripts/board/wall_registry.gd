@@ -105,6 +105,78 @@ func get_unclaimed_regions() -> Array[Region]:
 	return result
 
 
+## Destroy a non-boundary wall segment. Emits wall_segment_destroyed.
+func destroy_segment(seg: WallSegment) -> void:
+	if seg.is_boundary:
+		return
+	var idx := segments.find(seg)
+	if idx < 0:
+		return
+	segments.remove_at(idx)
+	GameEvents.wall_segment_destroyed.emit(seg)
+
+
+## Unclaim a region (boss Tank mechanic). Flips is_claimed to false.
+func unclaim_region(region: Region) -> void:
+	if not region.is_claimed:
+		return
+	region.is_claimed = false
+	region.invalidate_cache()
+	GameEvents.region_unclaimed.emit(region)
+	var pct := get_claim_percentage()
+	GameEvents.claim_percentage_changed.emit(pct)
+
+
+## Find non-boundary segments that border at least one claimed region.
+func find_segments_bordering_claimed() -> Array[WallSegment]:
+	var result: Array[WallSegment] = []
+	for seg in segments:
+		if seg.is_boundary:
+			continue
+		if _segment_borders_type(seg, true):
+			result.append(seg)
+	return result
+
+
+## Find non-boundary segments that border at least one unclaimed region.
+func find_segments_bordering_unclaimed() -> Array[WallSegment]:
+	var result: Array[WallSegment] = []
+	for seg in segments:
+		if seg.is_boundary:
+			continue
+		if _segment_borders_type(seg, false):
+			result.append(seg)
+	return result
+
+
+## Check if segment has a region of given claim status on either side.
+func _segment_borders_type(seg: WallSegment, claimed: bool) -> bool:
+	var mid := (seg.start + seg.end) * 0.5
+	var seg_dir := (seg.end - seg.start).normalized()
+	var normal := Vector2(-seg_dir.y, seg_dir.x)
+	var offset := 0.1
+	# Check both sides of segment
+	for side in [1.0, -1.0]:
+		var probe := mid + normal * offset * side
+		for region in regions:
+			if region.is_claimed == claimed and region.contains_point(probe):
+				return true
+	return false
+
+
+## Find claimed region adjacent to a segment (on either side).
+func find_claimed_region_near_segment(seg: WallSegment) -> Region:
+	var mid := (seg.start + seg.end) * 0.5
+	var seg_dir := (seg.end - seg.start).normalized()
+	var normal := Vector2(-seg_dir.y, seg_dir.x)
+	for side in [1.0, -1.0]:
+		var probe := mid + normal * 0.1 * side
+		for region in regions:
+			if region.is_claimed and region.contains_point(probe):
+				return region
+	return null
+
+
 ## Total board area (bounds).
 func get_total_area() -> float:
 	var size := bounds_max - bounds_min
