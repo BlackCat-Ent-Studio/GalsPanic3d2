@@ -264,9 +264,7 @@ func _ghost_appear(delta: float) -> void:
 
 func _ghost_spawn_throw_projectile() -> void:
 	# Clean dead refs
-	_spawned_minis = _spawned_minis.filter(
-		func(fb: Fireball) -> bool: return is_instance_valid(fb) and fb.is_inside_tree()
-	)
+	_spawned_minis = _clean_minis(_spawned_minis)
 	if _spawned_minis.size() >= config.max_summons:
 		return
 	if _fireball_manager == null:
@@ -373,6 +371,15 @@ func _ghost_vanish(delta: float) -> void:
 # SHARED UTILITIES
 # =============================================================================
 
+## Filter dead fireball refs. Returns typed Array[Fireball].
+static func _clean_minis(arr: Array[Fireball]) -> Array[Fireball]:
+	var result: Array[Fireball] = []
+	for fb in arr:
+		if is_instance_valid(fb) and fb.is_inside_tree():
+			result.append(fb)
+	return result
+
+
 func _update_summon(delta: float) -> void:
 	# Ghost boss uses its own throw mechanic, not shared summon
 	if _boss_type == 2:
@@ -386,9 +393,7 @@ func _update_summon(delta: float) -> void:
 	_summon_timer = 0.0
 
 	# Clean dead refs
-	_spawned_minis = _spawned_minis.filter(
-		func(fb: Fireball) -> bool: return is_instance_valid(fb) and fb.is_inside_tree()
-	)
+	_spawned_minis = _clean_minis(_spawned_minis)
 
 	if _spawned_minis.size() >= config.max_summons:
 		return
