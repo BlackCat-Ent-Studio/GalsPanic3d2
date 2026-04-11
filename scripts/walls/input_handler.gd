@@ -1,20 +1,19 @@
 extends Node
 class_name InputHandler
-## Handles mouse/touch drag-and-drop on XZ ground plane for wall placement.
+## Mouse hover → claw follows. Click → drop block. No dragging needed.
 
-signal drag_started(board_pos: Vector2)
-signal drag_updated(board_pos: Vector2)
-signal drag_ended(board_pos: Vector2)
-signal drag_cancelled()
+signal cursor_moved(board_pos: Vector2)
+signal click_placed(board_pos: Vector2)
+signal click_invalid()
 
 @export var camera: Camera3D
 @export var board: Board
 
-var _dragging: bool = false
-var _drag_position: Vector2 = Vector2.ZERO
+var _cursor_position: Vector2 = Vector2.ZERO
 var _is_valid_position: bool = false
 var _ground_plane := Plane(Vector3.UP, 0.0)
 var _enabled: bool = true
+var _has_cursor: bool = false
 
 ## Current generator config (set by UI / picker)
 var active_config: Resource
@@ -27,46 +26,22 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _enabled:
 		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_start_drag(event.position)
-		elif _dragging:
-			_end_drag(event.position)
-	elif event is InputEventMouseMotion and _dragging:
-		_update_drag(event.position)
-
-
-func _start_drag(screen_pos: Vector2) -> void:
-	var board_pos: Variant = _screen_to_board(screen_pos)
-	if board_pos == null:
-		return
-	_dragging = true
-	_drag_position = board_pos
-	_is_valid_position = _validate_position(board_pos)
-	drag_started.emit(board_pos)
-
-
-func _update_drag(screen_pos: Vector2) -> void:
-	var board_pos: Variant = _screen_to_board(screen_pos)
-	if board_pos == null:
-		_is_valid_position = false
-		drag_updated.emit(_drag_position)
-		return
-	_drag_position = board_pos
-	_is_valid_position = _validate_position(board_pos)
-	drag_updated.emit(board_pos)
-
-
-func _end_drag(screen_pos: Vector2) -> void:
-	_dragging = false
-	var board_pos: Variant = _screen_to_board(screen_pos)
-	if board_pos != null:
-		_drag_position = board_pos
+	# Mouse move (no click needed) → claw follows
+	if event is InputEventMouseMotion:
+		var board_pos: Variant = _screen_to_board(event.position)
+		if board_pos == null:
+			return
+		_cursor_position = board_pos
 		_is_valid_position = _validate_position(board_pos)
-	if _is_valid_position:
-		drag_ended.emit(_drag_position)
-	else:
-		drag_cancelled.emit()
+		_has_cursor = true
+		cursor_moved.emit(board_pos)
+	# Click → drop block
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed and _has_cursor:
+			if _is_valid_position:
+				click_placed.emit(_cursor_position)
+			else:
+				click_invalid.emit()
 
 
 func _screen_to_board(screen_pos: Vector2) -> Variant:

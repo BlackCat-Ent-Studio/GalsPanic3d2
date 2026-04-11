@@ -16,6 +16,7 @@ var current_level_config: LevelConfig
 var lives: int = INITIAL_LIVES
 var timer_remaining: float = 0.0
 var coins: int = 0
+var _last_claim_pct: float = 0.0
 var save: SaveData = SaveData.new()
 var inventory: GeneratorInventory = GeneratorInventory.new()
 var power_up_manager: PowerUpManager = PowerUpManager.new()
@@ -67,6 +68,7 @@ func _on_life_lost() -> void:
 
 
 func _on_claim_percentage_changed(pct: float) -> void:
+	_last_claim_pct = pct
 	if state != State.PLAYING:
 		return
 	if current_level_config and pct >= current_level_config.claim_percentage_to_win:
@@ -74,12 +76,14 @@ func _on_claim_percentage_changed(pct: float) -> void:
 
 
 func _level_complete() -> void:
+	if state == State.LEVEL_COMPLETE:
+		return  # Prevent double-trigger
 	state = State.LEVEL_COMPLETE
-	# Calculate coin reward from excess area
-	var pct: float = GameEvents.claim_percentage_changed.get_connections().size()  # placeholder
-	var excess := maxf(0.0, 0.0)  # Will be calculated from actual percentage
-	# For now, award flat coins
-	var earned := 10
+	# Coin reward: excess area above target × rate
+	var excess := maxf(0.0, _last_claim_pct - current_level_config.claim_percentage_to_win)
+	var excess_units := roundi(excess * 400.0)  # 20x20 board = 400 area
+	var earned := floori(excess_units * current_level_config.coins_per_excess_cell)
+	earned = maxi(earned, 5)  # Minimum 5 coins per level
 	coins += earned
 	save.set_coins(coins)
 	var next := current_level_index + 1
