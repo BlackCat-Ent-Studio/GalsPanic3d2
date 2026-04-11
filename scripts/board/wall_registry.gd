@@ -156,8 +156,8 @@ func _segment_borders_type(seg: WallSegment, claimed: bool) -> bool:
 	var normal := Vector2(-seg_dir.y, seg_dir.x)
 	var offset := 0.1
 	# Check both sides of segment
-	for side in [1.0, -1.0]:
-		var probe := mid + normal * offset * side
+	for side: float in [1.0, -1.0]:
+		var probe: Vector2 = mid + normal * offset * side
 		for region in regions:
 			if region.is_claimed == claimed and region.contains_point(probe):
 				return true
@@ -169,8 +169,8 @@ func find_claimed_region_near_segment(seg: WallSegment) -> Region:
 	var mid := (seg.start + seg.end) * 0.5
 	var seg_dir := (seg.end - seg.start).normalized()
 	var normal := Vector2(-seg_dir.y, seg_dir.x)
-	for side in [1.0, -1.0]:
-		var probe := mid + normal * 0.1 * side
+	for side: float in [1.0, -1.0]:
+		var probe: Vector2 = mid + normal * 0.1 * side
 		for region in regions:
 			if region.is_claimed and region.contains_point(probe):
 				return region

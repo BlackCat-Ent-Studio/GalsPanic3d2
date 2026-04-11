@@ -8,6 +8,8 @@ const EDGE_EXPAND := 0.03  # Slight polygon expansion to cover seams
 
 var _rising_tiles: Array[Dictionary] = []
 var _tile_material: StandardMaterial3D
+## Map region → tile MeshInstance3D for removal on unclaim.
+var _region_tiles: Dictionary = {}
 
 
 func _ready() -> void:
@@ -17,6 +19,7 @@ func _ready() -> void:
 	_tile_material.emission = Color(0.1, 0.25, 0.5)
 	_tile_material.emission_energy_multiplier = 0.3
 	GameEvents.regions_claimed_with_data.connect(_on_regions_claimed)
+	GameEvents.region_unclaimed.connect(_on_region_unclaimed)
 
 
 func _process(delta: float) -> void:
@@ -58,6 +61,18 @@ func _spawn_tile(region: Region) -> void:
 	mi.position.y = -TILE_HEIGHT
 	add_child(mi)
 	_rising_tiles.append({"node": mi, "progress": 0.0})
+	_region_tiles[region] = mi
+
+
+func _on_region_unclaimed(region: RefCounted) -> void:
+	var tile: MeshInstance3D = _region_tiles.get(region)
+	if tile == null:
+		return
+	_region_tiles.erase(region)
+	# Sink and remove tile
+	var tween := create_tween()
+	tween.tween_property(tile, "position:y", -TILE_HEIGHT, 0.4).set_ease(Tween.EASE_IN)
+	tween.tween_callback(tile.queue_free)
 
 
 func _generate_prism_mesh(polygon: PackedVector2Array) -> ArrayMesh:
