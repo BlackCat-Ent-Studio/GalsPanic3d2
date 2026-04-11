@@ -19,6 +19,7 @@ var _target_xz: Vector2 = Vector2.ZERO
 var _is_dropping: bool = false
 var _current_config: Resource
 var _is_valid: bool = true
+var _drop_xz: Vector2 = Vector2.ZERO  # Claw position at click time
 
 # Swing physics
 var _prev_pos: Vector3 = Vector3.ZERO
@@ -80,16 +81,18 @@ func drop_block(board_pos: Vector2) -> void:
 		return
 	_is_dropping = true
 	_target_xz = board_pos
+	# Snapshot claw's current XZ at the moment of click
+	_drop_xz = Vector2(position.x, position.z)
 	_open_prongs()
 
-	# Create falling block (detached from claw)
+	# Create falling block at claw's current position (frozen)
 	var fall_block := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(0.45, 0.45, 0.45)
 	fall_block.mesh = box
 	fall_block.material_override = _block_material.duplicate()
 	get_tree().current_scene.add_child(fall_block)
-	fall_block.global_position = _block.global_position
+	fall_block.global_position = Vector3(_drop_xz.x, HOVER_HEIGHT, _drop_xz.y)
 	_block.visible = false
 
 	# Gravity fall + bounce
@@ -109,7 +112,7 @@ func drop_block(board_pos: Vector2) -> void:
 
 func _on_block_landed() -> void:
 	_is_dropping = false
-	drop_completed.emit(_target_xz)
+	drop_completed.emit(_drop_xz)
 	var tween := create_tween()
 	tween.tween_interval(0.2)
 	tween.tween_callback(func() -> void:

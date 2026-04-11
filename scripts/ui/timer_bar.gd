@@ -1,9 +1,9 @@
 extends Control
 class_name TimerBar
-## Top timer bar that color-lerps green → yellow → red.
+## Compact timer bar below progress bar.
 
-const BAR_WIDTH := 400.0
-const BAR_HEIGHT := 12.0
+const BAR_WIDTH := 200.0
+const BAR_HEIGHT := 8.0
 
 var _fill: ColorRect
 var _bg: ColorRect
@@ -14,12 +14,12 @@ func _ready() -> void:
 	anchor_left = 0.5
 	anchor_top = 0.0
 	offset_left = -BAR_WIDTH / 2.0
-	offset_top = 42
-	size = Vector2(BAR_WIDTH, BAR_HEIGHT + 16)
+	offset_top = 24
+	size = Vector2(BAR_WIDTH, BAR_HEIGHT + 14)
 
 	_bg = ColorRect.new()
 	_bg.size = Vector2(BAR_WIDTH, BAR_HEIGHT)
-	_bg.color = Color(0.15, 0.15, 0.2)
+	_bg.color = Color(0.1, 0.1, 0.15, 0.8)
 	add_child(_bg)
 
 	_fill = ColorRect.new()
@@ -28,8 +28,8 @@ func _ready() -> void:
 	add_child(_fill)
 
 	_label = Label.new()
-	_label.position = Vector2(0, BAR_HEIGHT + 1)
-	_label.add_theme_font_size_override("font_size", 11)
+	_label.position = Vector2(BAR_WIDTH + 6, -3)
+	_label.add_theme_font_size_override("font_size", 10)
 	add_child(_label)
 
 	GameEvents.timer_changed.connect(_update)

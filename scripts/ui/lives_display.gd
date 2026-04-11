@@ -1,9 +1,9 @@
 extends HBoxContainer
 class_name LivesDisplay
-## Row of life icons. Fades out on life lost.
+## Compact life icons top-left. Small circles instead of big squares.
 
 const MAX_LIVES := 5
-const ICON_SIZE := 24.0
+const ICON_SIZE := 16.0
 
 var _icons: Array[ColorRect] = []
 
@@ -11,9 +11,9 @@ var _icons: Array[ColorRect] = []
 func _ready() -> void:
 	anchor_left = 0.0
 	anchor_top = 0.0
-	offset_left = 15
-	offset_top = 12
-	add_theme_constant_override("separation", 6)
+	offset_left = 10
+	offset_top = 8
+	add_theme_constant_override("separation", 4)
 
 	for i in MAX_LIVES:
 		var icon := ColorRect.new()
