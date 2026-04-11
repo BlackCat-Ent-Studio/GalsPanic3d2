@@ -5,6 +5,8 @@ extends RefCounted
 var start: Vector2
 var end: Vector2
 var is_boundary: bool
+## Optional reference to the 3D node that visually represents this wall.
+var source_node: Node = null
 
 
 func _init(p_start: Vector2 = Vector2.ZERO, p_end: Vector2 = Vector2.ZERO, p_boundary: bool = false) -> void:

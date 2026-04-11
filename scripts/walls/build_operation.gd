@@ -66,7 +66,9 @@ func _on_arm_completed(arm: BuildArm) -> void:
 	# Register segment immediately
 	if not arm.is_registered:
 		arm.is_registered = true
-		wall_registry.add_segment(arm.to_wall_segment())
+		var seg := arm.to_wall_segment()
+		seg.source_node = arm
+		wall_registry.add_segment(seg)
 	_check_all_done()
 
 

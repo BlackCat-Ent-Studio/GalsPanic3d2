@@ -113,6 +113,11 @@ func destroy_segment(seg: WallSegment) -> void:
 	if idx < 0:
 		return
 	segments.remove_at(idx)
+	# Dissolve the 3D wall visual if present
+	if seg.source_node and is_instance_valid(seg.source_node) and seg.source_node.has_method("start_dissolve"):
+		seg.source_node.start_dissolve(0.4)
+	elif seg.source_node and is_instance_valid(seg.source_node):
+		seg.source_node.queue_free()
 	GameEvents.wall_segment_destroyed.emit(seg)
 
 
