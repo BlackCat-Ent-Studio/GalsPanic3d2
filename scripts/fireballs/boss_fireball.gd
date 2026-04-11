@@ -229,9 +229,7 @@ func _ghost_drift(delta: float) -> void:
 	# Check if time to appear and throw
 	if _ghost_timer >= _ghost_throw_interval:
 		# Only appear if we can actually spawn a mini
-		_spawned_minis = _spawned_minis.filter(
-			func(fb: Fireball) -> bool: return is_instance_valid(fb) and fb.is_inside_tree()
-		)
+		_spawned_minis = _clean_minis(_spawned_minis)
 		if _spawned_minis.size() < config.max_summons and _fireball_manager:
 			_ghost_start_appear()
 		else:
@@ -372,7 +370,7 @@ func _ghost_vanish(delta: float) -> void:
 # =============================================================================
 
 ## Filter dead fireball refs. Returns typed Array[Fireball].
-static func _clean_minis(arr: Array[Fireball]) -> Array[Fireball]:
+func _clean_minis(arr: Array[Fireball]) -> Array[Fireball]:
 	var result: Array[Fireball] = []
 	for fb in arr:
 		if is_instance_valid(fb) and fb.is_inside_tree():
