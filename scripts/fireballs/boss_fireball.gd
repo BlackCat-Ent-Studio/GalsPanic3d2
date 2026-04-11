@@ -304,6 +304,13 @@ func _ghost_spawn_throw_projectile() -> void:
 			projectile.global_position = a.lerp(b, t),
 		0.0, 1.0, GHOST_THROW_DURATION * 0.5
 	)
+	# Screen impact: spawn crack effect
+	var crack_pos := screen_hit
+	tween.tween_callback(func() -> void:
+		var crack := ScreenCrackEffect.new()
+		get_tree().current_scene.add_child(crack)
+		crack.setup(crack_pos)
+	)
 	# Phase 2: bounce down from screen to board
 	var mid_down := (screen_hit + land_3d) * 0.5
 	mid_down.y = 4.0  # Lower bounce arc
