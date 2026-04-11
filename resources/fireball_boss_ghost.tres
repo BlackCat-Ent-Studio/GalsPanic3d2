@@ -20,6 +20,6 @@ is_boss = true
 boss_type = 2
 summon_interval = 10.0
 summon_type = "yellow"
-max_summons = 2
+max_summons = 5
 invisible_on_time = 10.0
 invisible_off_time = 5.0

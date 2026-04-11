@@ -228,7 +228,14 @@ func _ghost_drift(delta: float) -> void:
 
 	# Check if time to appear and throw
 	if _ghost_timer >= _ghost_throw_interval:
-		_ghost_start_appear()
+		# Only appear if we can actually spawn a mini
+		_spawned_minis = _spawned_minis.filter(
+			func(fb: Fireball) -> bool: return is_instance_valid(fb) and fb.is_inside_tree()
+		)
+		if _spawned_minis.size() < config.max_summons and _fireball_manager:
+			_ghost_start_appear()
+		else:
+			_ghost_timer = 0.0  # Reset timer, try again later
 
 
 func _ghost_start_appear() -> void:
