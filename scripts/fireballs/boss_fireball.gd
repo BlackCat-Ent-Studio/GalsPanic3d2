@@ -2,10 +2,10 @@ extends Fireball
 class_name BossFireball
 ## Boss fireball with unique movement patterns. Invincible, targets walls only.
 ## Boss 1 (Tank): patrols → locks on → charges claimed walls → unclaims territory.
-## Boss 2 (Ghost): drifts → phases through unclaimed walls → dissolves them.
+## Boss 2 (Ghost): invisible drift → appears → throws mini at screen → vanishes.
 
 enum TankState { PATROL, LOCK_ON, CHARGE, COOLDOWN }
-enum GhostState { DRIFT, PHASE_THROUGH, DISSOLVE }
+enum GhostState { DRIFT, APPEAR, THROW, VANISH }
 
 var _fireball_manager: Node  # FireballManager reference
 var _boss_type: int = 0
@@ -29,14 +29,11 @@ const CHARGE_HIT_DIST := 0.5
 # Ghost state
 var _ghost_state: GhostState = GhostState.DRIFT
 var _ghost_timer: float = 0.0
-var _dissolve_target: WallSegment = null
 var _drift_time: float = 0.0
-var _ghost_seek_timer: float = 0.0
-var _ghost_seek_target: Vector2 = Vector2.ZERO
-var _ghost_has_target: bool = false
-const DISSOLVE_DELAY := 1.5
-const GHOST_DISSOLVE_COOLDOWN := 2.0
-const GHOST_SEEK_INTERVAL := 3.0
+var _ghost_throw_interval: float = 10.0  # Time between throws
+const GHOST_APPEAR_DURATION := 0.8
+const GHOST_THROW_DURATION := 1.2  # Arc animation time
+const GHOST_VANISH_DURATION := 0.5
 
 # Ghost visibility (existing mechanic)
 var _visibility_timer: float = 0.0
@@ -201,7 +198,7 @@ func _tank_cooldown() -> void:
 
 
 # =============================================================================
-# GHOST BOSS — The Infiltrator
+# GHOST BOSS — The Summoner
 # =============================================================================
 
 func _ghost_process(delta: float) -> void:
@@ -209,133 +206,159 @@ func _ghost_process(delta: float) -> void:
 	match _ghost_state:
 		GhostState.DRIFT:
 			_ghost_drift(delta)
-		GhostState.PHASE_THROUGH:
-			_ghost_phase_through(delta)
-		GhostState.DISSOLVE:
-			_ghost_dissolve()
+		GhostState.APPEAR:
+			_ghost_appear(delta)
+		GhostState.THROW:
+			_ghost_throw(delta)
+		GhostState.VANISH:
+			_ghost_vanish(delta)
 
 
 func _ghost_drift(delta: float) -> void:
+	# Invisible movement — bounce off all walls normally
 	_drift_time += delta
 	_bounce_cooldown = maxf(0.0, _bounce_cooldown - delta)
-
-	# Periodically seek nearest unclaimed wall
-	_ghost_seek_timer += delta
-	if _ghost_seek_timer >= GHOST_SEEK_INTERVAL:
-		_ghost_seek_timer = 0.0
-		_ghost_acquire_target()
-
-	# Steer toward target if we have one, otherwise sine-wave drift
-	if _ghost_has_target and _bounce_cooldown <= 0.0:
-		var to_target := (_ghost_seek_target - board_position).normalized()
-		# Blend toward target direction
-		_direction = _direction.lerp(to_target, 2.0 * delta).normalized()
-		# Clear target when close enough
-		if board_position.distance_to(_ghost_seek_target) < 1.0:
-			_ghost_has_target = false
-	elif _bounce_cooldown <= 0.0:
+	if _bounce_cooldown <= 0.0:
 		var wave := sin(_drift_time * 1.5) * 0.8
 		_direction = _direction.rotated(wave * delta)
 
 	board_position += _direction * effective_speed * delta
-
-	# Check wall collision — phase through unclaimed walls, bounce off claimed
-	_ghost_check_walls()
+	_check_wall_bouncing()
 	_clamp_to_bounds()
 
+	# Check if time to appear and throw
+	if _ghost_timer >= _ghost_throw_interval:
+		_ghost_start_appear()
 
-func _ghost_acquire_target() -> void:
-	var candidates := _wall_registry.find_segments_bordering_unclaimed()
-	if candidates.is_empty():
-		_ghost_has_target = false
+
+func _ghost_start_appear() -> void:
+	_ghost_state = GhostState.APPEAR
+	_ghost_timer = 0.0
+	# Force visible with dramatic flash
+	_is_visible = true
+	if _mesh and _mesh.material_override:
+		var mat: StandardMaterial3D = _mesh.material_override
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color.a = 0.0
+		var tween := create_tween()
+		tween.tween_property(mat, "albedo_color:a", 1.0, 0.3)
+		tween.parallel().tween_property(mat, "emission_energy_multiplier", 5.0, 0.3)
+	_flash_boss_color(Color.MAGENTA)
+
+
+func _ghost_appear(delta: float) -> void:
+	# Stay still, pulsing — building tension
+	# Don't move during appear
+	if _ghost_timer >= GHOST_APPEAR_DURATION:
+		_ghost_state = GhostState.THROW
+		_ghost_timer = 0.0
+		_ghost_spawn_throw_projectile()
+
+
+func _ghost_spawn_throw_projectile() -> void:
+	# Clean dead refs
+	_spawned_minis = _spawned_minis.filter(
+		func(fb: Fireball) -> bool: return is_instance_valid(fb) and fb.is_inside_tree()
+	)
+	if _spawned_minis.size() >= config.max_summons:
 		return
-	# Pick closest non-boundary segment
-	var best_seg: WallSegment = null
-	var best_dist := INF
-	for seg in candidates:
-		var mid := (seg.start + seg.end) * 0.5
-		var dist := board_position.distance_squared_to(mid)
-		if dist < best_dist:
-			best_dist = dist
-			best_seg = seg
-	if best_seg:
-		_ghost_seek_target = (best_seg.start + best_seg.end) * 0.5
-		_ghost_has_target = true
-
-
-func _ghost_check_walls() -> void:
-	var move_vec := board_position - previous_position
-	var travel := move_vec.length()
-	if travel < 0.001:
+	if _fireball_manager == null:
 		return
-	var move_dir := move_vec / travel
 
-	for seg in _wall_registry.segments:
-		if seg.is_boundary:
-			# Bounce off boundaries normally
-			var result := GeometryUtils.ray_segment_intersection(
-				previous_position, move_dir, seg.start, seg.end
-			)
-			if result.is_empty():
-				continue
-			var t: float = result["t"]
-			if t < -0.01 or t > travel + config.radius:
-				continue
-			_do_bounce(
-				GeometryCollisionUtils.reflect_off_segment(_direction, seg.start, seg.end),
-				result["point"]
-			)
-			return
+	# Landing position: random point in unclaimed area
+	var landing := Vector2(randf_range(-8.0, 8.0), randf_range(-8.0, 8.0))
 
-		# Non-boundary wall: check if it borders unclaimed territory
-		var result := GeometryUtils.ray_segment_intersection(
-			previous_position, move_dir, seg.start, seg.end
-		)
-		if result.is_empty():
-			continue
-		var t: float = result["t"]
-		if t < -0.01 or t > travel + config.radius:
-			continue
+	# Create the arc projectile visual (3D sphere that arcs up to screen then down)
+	var projectile := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.15
+	sphere.height = 0.3
+	projectile.mesh = sphere
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = config.color
+	mat.emission_enabled = true
+	mat.emission = config.color
+	mat.emission_energy_multiplier = 4.0
+	projectile.material_override = mat
+	get_tree().current_scene.add_child(projectile)
 
-		if _wall_registry._segment_borders_type(seg, false) and _dissolve_target == null:
-			# Borders unclaimed → phase through and mark for dissolution
-			_dissolve_target = seg
-			_ghost_state = GhostState.PHASE_THROUGH
-			_ghost_timer = 0.0
-			# Don't bounce — pass through
-			return
-		elif _wall_registry._segment_borders_type(seg, false):
-			# Already have a dissolve target, just pass through silently
-			return
-		else:
-			# Borders only claimed → bounce normally
-			_do_bounce(
-				GeometryCollisionUtils.reflect_off_segment(_direction, seg.start, seg.end),
-				result["point"]
-			)
-			return
+	var start_3d := Board.board_to_world(board_position, 0.3)
+	# Screen position: vertical wall at Z = -10, Y ~6 (center of screen)
+	var screen_hit := Vector3(landing.x * 0.5, 6.0, -10.0)
+	var land_3d := Board.board_to_world(landing, 0.3)
+
+	projectile.global_position = start_3d
+
+	# Arc: boss → screen (arc up) → board (arc down)
+	var tween := create_tween()
+	# Phase 1: arc up to screen
+	var mid_up := (start_3d + screen_hit) * 0.5
+	mid_up.y = 12.0  # High arc
+	tween.tween_method(
+		func(t: float) -> void:
+			var a: Vector3 = start_3d.lerp(mid_up, t)
+			var b: Vector3 = mid_up.lerp(screen_hit, t)
+			projectile.global_position = a.lerp(b, t),
+		0.0, 1.0, GHOST_THROW_DURATION * 0.5
+	)
+	# Phase 2: bounce down from screen to board
+	var mid_down := (screen_hit + land_3d) * 0.5
+	mid_down.y = 4.0  # Lower bounce arc
+	tween.tween_method(
+		func(t: float) -> void:
+			var a: Vector3 = screen_hit.lerp(mid_down, t)
+			var b: Vector3 = mid_down.lerp(land_3d, t)
+			projectile.global_position = a.lerp(b, t),
+		0.0, 1.0, GHOST_THROW_DURATION * 0.5
+	)
+	# On landing: remove projectile visual, spawn real fireball
+	tween.tween_callback(func() -> void:
+		projectile.queue_free()
+		_ghost_land_mini(landing)
+	)
 
 
-func _ghost_phase_through(delta: float) -> void:
-	# Continue moving through (no wall collision during phase)
-	board_position += _direction * effective_speed * delta
-	_clamp_to_bounds()
+func _ghost_land_mini(landing: Vector2) -> void:
+	if _fireball_manager == null:
+		return
+	var type_configs := {
+		"red": "res://resources/fireball_red.tres",
+		"yellow": "res://resources/fireball_yellow.tres",
+		"white": "res://resources/fireball_white.tres",
+	}
+	var summon_t: String = config.summon_type
+	var cfg_path: String = type_configs.get(summon_t, type_configs["red"])
+	var mini_cfg: Resource = load(cfg_path)
+	var mini := Fireball.new()
+	_fireball_manager.add_child(mini)
+	mini.setup(mini_cfg, landing, _wall_registry, 0)
+	_spawned_minis.append(mini)
+	# Impact VFX
+	_shake_camera()
 
-	# Brief translucent flash
-	if _ghost_timer >= 0.5:
-		_ghost_state = GhostState.DISSOLVE
+
+func _ghost_throw(delta: float) -> void:
+	# Wait for throw animation to complete
+	if _ghost_timer >= GHOST_THROW_DURATION:
+		_ghost_state = GhostState.VANISH
 		_ghost_timer = 0.0
 
 
-func _ghost_dissolve() -> void:
-	if _ghost_timer >= DISSOLVE_DELAY:
-		# Destroy the wall segment
-		if _dissolve_target and _wall_registry.segments.has(_dissolve_target):
-			_wall_registry.destroy_segment(_dissolve_target)
-			GameEvents.fireball_bounced.emit(self, (_dissolve_target.start + _dissolve_target.end) * 0.5)
-		_dissolve_target = null
+func _ghost_vanish(delta: float) -> void:
+	# Fade out
+	if _ghost_timer < 0.1:
+		if _mesh and _mesh.material_override:
+			var mat: StandardMaterial3D = _mesh.material_override
+			var tween := create_tween()
+			tween.tween_property(mat, "albedo_color:a", 0.05, GHOST_VANISH_DURATION)
+			tween.parallel().tween_property(mat, "emission_energy_multiplier", 0.0, GHOST_VANISH_DURATION)
+	# Resume drifting after vanish
+	if _ghost_timer >= GHOST_VANISH_DURATION:
+		_is_visible = false
 		_ghost_state = GhostState.DRIFT
-		_ghost_timer = -GHOST_DISSOLVE_COOLDOWN  # Negative timer = cooldown before next dissolve
+		_ghost_timer = 0.0
+		_ghost_throw_interval = randf_range(8.0, 12.0)  # Randomize next interval
+		_direction = Vector2.from_angle(randf() * TAU)
 
 
 # =============================================================================
@@ -343,6 +366,9 @@ func _ghost_dissolve() -> void:
 # =============================================================================
 
 func _update_summon(delta: float) -> void:
+	# Ghost boss uses its own throw mechanic, not shared summon
+	if _boss_type == 2:
+		return
 	if _fireball_manager == null:
 		return
 	_summon_timer += delta
