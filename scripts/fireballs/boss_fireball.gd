@@ -143,6 +143,13 @@ func _tank_lock_on(delta: float) -> void:
 
 
 func _tank_charge(delta: float) -> void:
+	# Abort if target was destroyed externally
+	if _charge_target == null or not _wall_registry.segments.has(_charge_target):
+		_charge_target = null
+		_tank_state = TankState.COOLDOWN
+		_tank_timer = 0.0
+		_flash_boss_color(config.color)
+		return
 	# Charge at high speed toward target
 	var charge_speed := effective_speed * CHARGE_SPEED_MULT
 	_direction = (_charge_target_pos - board_position).normalized()
@@ -253,12 +260,15 @@ func _ghost_check_walls() -> void:
 		if t < -0.01 or t > travel + config.radius:
 			continue
 
-		if _wall_registry._segment_borders_type(seg, false):
+		if _wall_registry._segment_borders_type(seg, false) and _dissolve_target == null:
 			# Borders unclaimed → phase through and mark for dissolution
 			_dissolve_target = seg
 			_ghost_state = GhostState.PHASE_THROUGH
 			_ghost_timer = 0.0
 			# Don't bounce — pass through
+			return
+		elif _wall_registry._segment_borders_type(seg, false):
+			# Already have a dissolve target, just pass through silently
 			return
 		else:
 			# Borders only claimed → bounce normally
