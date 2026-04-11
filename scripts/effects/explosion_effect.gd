@@ -24,8 +24,8 @@ func _create_flash() -> void:
 	var quad := QuadMesh.new()
 	quad.size = Vector2(0.1, 0.1)
 	mi.mesh = quad
-	mi.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	var mat := StandardMaterial3D.new()
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	mat.albedo_color = Color.WHITE
 	mat.emission_enabled = true
 	mat.emission = _color

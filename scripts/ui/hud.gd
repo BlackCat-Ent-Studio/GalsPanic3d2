@@ -8,6 +8,8 @@ var timer_bar: TimerBar
 var lives_display: LivesDisplay
 var power_up_panel: PowerUpPanel
 var center_messages: CenterMessages
+var pause_menu: PauseMenu
+var tutorial_manager: TutorialManager
 
 
 func _ready() -> void:
@@ -34,3 +36,14 @@ func _ready() -> void:
 
 	center_messages = CenterMessages.new()
 	root.add_child(center_messages)
+
+	pause_menu = PauseMenu.new()
+	root.add_child(pause_menu)
+
+	tutorial_manager = TutorialManager.new()
+	add_child(tutorial_manager)
+	tutorial_manager.setup(root)
+
+	# Start tutorial on level 1
+	if GameManager.current_level_index == 0:
+		tutorial_manager.start()

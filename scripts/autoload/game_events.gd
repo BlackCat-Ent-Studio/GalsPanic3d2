@@ -23,6 +23,8 @@ signal drop_item_collected(type: int)
 
 # Wall placement / Arms
 signal wall_placement_started()
+signal wall_placement_cancelled()
+signal drag_started()
 signal arm_destroyed()
 signal generator_destroyed()
 

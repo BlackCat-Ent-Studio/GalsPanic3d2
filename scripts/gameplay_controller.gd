@@ -74,6 +74,7 @@ func _setup_drop_spawner() -> void:
 
 func _on_drag_started(board_pos: Vector2) -> void:
 	_update_preview(board_pos)
+	GameEvents.drag_started.emit()
 
 
 func _on_drag_updated(board_pos: Vector2) -> void:
@@ -93,6 +94,7 @@ func _on_drag_ended(board_pos: Vector2) -> void:
 
 func _on_drag_cancelled() -> void:
 	_wall_preview.hide_preview()
+	GameEvents.wall_placement_cancelled.emit()
 
 
 func _update_preview(board_pos: Vector2) -> void:
