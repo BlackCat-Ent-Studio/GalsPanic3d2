@@ -40,9 +40,21 @@ func spawn_from_placements(placements: Array, level: int) -> void:
 		var pos: Vector2 = p["position"]
 		var is_boss: bool = type_key.begins_with("boss")
 		if is_boss:
+			# Duplicate config so per-placement overrides don't mutate the .tres
+			var override_cfg: Resource = cfg.duplicate()
+			if p.has("summon_interval"):
+				override_cfg.summon_interval = p["summon_interval"]
+			if p.has("summon_type"):
+				override_cfg.summon_type = p["summon_type"]
+			if p.has("max_summons"):
+				override_cfg.max_summons = p["max_summons"]
+			if p.has("invisible_on_time"):
+				override_cfg.invisible_on_time = p["invisible_on_time"]
+			if p.has("invisible_off_time"):
+				override_cfg.invisible_off_time = p["invisible_off_time"]
 			var boss := BossFireball.new()
 			add_child(boss)
-			boss.setup(cfg, pos, _wall_registry, level)
+			boss.setup(override_cfg, pos, _wall_registry, level)
 			boss.set_fireball_manager(self)
 		else:
 			var fb := Fireball.new()

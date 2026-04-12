@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="LevelConfig" load_steps=2 format=3 uid="uid://hg2wcl63rhqe"]
+[gd_resource type="Resource" script_class="LevelConfig" load_steps=2 format=3 uid="uid://buskkuyxgipii"]
 
-[ext_resource type="Script" uid="uid://cm401712h3xiq" path="res://scripts/levels/level_config.gd" id="1_fq8ci"]
+[ext_resource type="Script" uid="uid://cm401712h3xiq" path="res://scripts/levels/level_config.gd" id="1_nds82"]
 
 [resource]
-script = ExtResource("1_fq8ci")
+script = ExtResource("1_nds82")
+level_number = 4
 fireball_spawn_entries = [{
 "count": 4,
 "speed_level": 0,
