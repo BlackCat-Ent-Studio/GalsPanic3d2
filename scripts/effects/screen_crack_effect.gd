@@ -1,6 +1,6 @@
 extends MeshInstance3D
 class_name ScreenCrackEffect
-## Small procedural crack on image reveal screen. Fades and self-destructs.
+## Broken glass texture overlay on image reveal screen. Fades and self-destructs.
 
 const CRACK_SIZE := 2.5
 const FADE_DURATION := 2.0
@@ -12,11 +12,13 @@ func setup(hit_position: Vector3) -> void:
 	quad.size = Vector2(CRACK_SIZE, CRACK_SIZE)
 	mesh = quad
 
-	var shader := preload("res://shaders/screen_crack.gdshader")
-	var mat := ShaderMaterial.new()
-	mat.shader = shader
-	mat.set_shader_parameter("fade", 1.0)
-	mat.set_shader_parameter("crack_color", Vector3(1.0, 1.0, 1.0))
+	var tex: Texture2D = preload("res://textures/broken_glass.png")
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = tex
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
 	material_override = mat
 
 	# Position slightly in front of screen to avoid z-fighting
@@ -24,5 +26,5 @@ func setup(hit_position: Vector3) -> void:
 
 	# Fade out and self-destruct
 	var tween := create_tween()
-	tween.tween_property(mat, "shader_parameter/fade", 0.0, FADE_DURATION)
+	tween.tween_property(mat, "albedo_color:a", 0.0, FADE_DURATION)
 	tween.tween_callback(queue_free)
