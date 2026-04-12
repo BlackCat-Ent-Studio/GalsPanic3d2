@@ -4,7 +4,6 @@ render_mode blend_mix, cull_disabled, unshaded;
 uniform float fade : hint_range(0.0, 1.0) = 1.0;
 uniform float time_offset = 0.0;
 
-// Hash for randomness
 float hash(float n) {
 	return fract(sin(n) * 43758.5453);
 }
@@ -16,54 +15,52 @@ float hash2(vec2 p) {
 void fragment() {
 	vec2 uv = UV;
 	vec2 centered = uv - 0.5;
-	float dist_from_center = length(centered);
+	float dist = length(centered);
 
-	// Falloff: streaks concentrated near center, fade at edges
-	float falloff = 1.0 - smoothstep(0.0, 0.5, dist_from_center);
-	falloff = pow(falloff, 1.5);
+	// Tight circular mask — only render within small radius around center
+	float mask = 1.0 - smoothstep(0.15, 0.35, dist);
+	if (mask < 0.001) {
+		discard;
+	}
 
-	// Vertical streaks: divide horizontal axis into bands
-	float band_count = 80.0;
+	// Vertical streaks
+	float band_count = 60.0;
 	float band_x = floor(uv.x * band_count);
 	float band_seed = hash(band_x);
 
-	// Each band has random vertical extent (height) and offset
-	float band_height = 0.3 + band_seed * 0.7;
-	float band_offset = hash(band_x + 17.3) * 2.0 - 1.0;
+	// Each band has small random vertical extent centered on impact y
+	float band_half_height = 0.05 + band_seed * 0.15;
+	float band_center_y = 0.5 + (hash(band_x + 17.3) - 0.5) * 0.1;
+	float v_dist = abs(uv.y - band_center_y);
+	float streak = step(v_dist, band_half_height);
 
-	// Animated flicker (slight time-based variation)
-	float flicker_t = TIME * 8.0 + time_offset;
-	float flicker = 0.5 + 0.5 * sin(flicker_t + band_x * 0.5);
+	// Animated flicker
+	float flicker_t = TIME * 10.0 + time_offset;
+	float flicker = 0.6 + 0.4 * sin(flicker_t + band_x * 0.7);
 
-	// Streak intensity based on distance from center vertically
-	float v_dist = abs(uv.y - 0.5 - band_offset * 0.1);
-	float streak = step(v_dist, band_height * 0.5);
+	// Sub-band gaps for finer detail
+	float sub_band = floor(uv.x * band_count * 3.0);
+	float sub_noise = hash(sub_band + flicker_t * 0.05);
+	float sub_streak = step(0.35, sub_noise);
 
-	// Random per-band color (RGB stripes)
+	// Per-band saturated RGB color
 	vec3 band_color = vec3(
 		hash(band_x + 1.0),
 		hash(band_x + 2.0),
 		hash(band_x + 3.0)
 	);
-	// Boost saturation - pick dominant channel
 	float max_c = max(band_color.r, max(band_color.g, band_color.b));
-	band_color = pow(band_color / max(max_c, 0.001), vec3(2.0));
+	band_color = pow(band_color / max(max_c, 0.001), vec3(2.5));
 
-	// Sub-bands within each band for finer detail
-	float sub_band = floor(uv.x * band_count * 4.0);
-	float sub_noise = hash(sub_band + flicker_t * 0.1);
-	float sub_streak = step(0.3, sub_noise);
+	float intensity = streak * sub_streak * flicker * mask;
 
-	// Combine: streak * sub_streak * flicker * falloff
-	float intensity = streak * sub_streak * (0.5 + flicker * 0.5) * falloff;
+	// Speckle noise tightly around center
+	float noise = hash2(uv * 250.0 + vec2(flicker_t * 0.2));
+	float speckle = step(0.88, noise) * mask;
 
-	// Add some white noise speckles near center
-	float noise = hash2(uv * 200.0 + vec2(flicker_t * 0.3));
-	float speckle = step(0.85, noise) * falloff * 0.6;
-
-	vec3 final_color = band_color * intensity + vec3(speckle);
-	float alpha = (intensity + speckle) * fade;
+	vec3 final_color = band_color * intensity + vec3(speckle * 0.8);
+	float alpha = clamp((intensity + speckle) * fade, 0.0, 1.0);
 
 	ALBEDO = final_color;
-	ALPHA = clamp(alpha, 0.0, 1.0);
+	ALPHA = alpha;
 }

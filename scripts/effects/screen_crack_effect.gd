@@ -2,7 +2,8 @@ extends Node3D
 class_name ScreenCrackEffect
 ## Layered broken screen effect: animated LCD glitch + broken glass texture overlay.
 
-const CRACK_SIZE := 2.5
+const CRACK_SIZE := 1.6
+const GLITCH_SIZE := 1.2
 const FADE_DURATION := 2.0
 
 
@@ -11,10 +12,10 @@ func setup(hit_position: Vector3) -> void:
 	# Position the whole effect slightly in front of the screen
 	global_position = hit_position + Vector3(0.0, 0.0, 0.02)
 
-	# Layer 1 (back): animated LCD glitch shader
+	# Layer 1 (back): animated LCD glitch shader (smaller, tightly localized)
 	var glitch_quad := MeshInstance3D.new()
 	var glitch_mesh := QuadMesh.new()
-	glitch_mesh.size = Vector2(CRACK_SIZE, CRACK_SIZE)
+	glitch_mesh.size = Vector2(GLITCH_SIZE, GLITCH_SIZE)
 	glitch_quad.mesh = glitch_mesh
 	var glitch_shader := preload("res://shaders/lcd_glitch.gdshader")
 	var glitch_mat := ShaderMaterial.new()
