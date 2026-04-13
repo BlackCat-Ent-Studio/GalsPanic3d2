@@ -12,10 +12,11 @@ var territory_claimer: TerritoryClaimer
 
 var _ground_shader_mat: ShaderMaterial
 var _claim_tile_spawner: ClaimTileSpawner
-var _reveal_screen: ImageRevealScreen
+var reveal_screen: ImageRevealScreen
 
 
 func _ready() -> void:
+	add_to_group("board")
 	wall_registry = WallRegistry.new()
 	wall_registry.initialize_board(BOUNDS_MIN, BOUNDS_MAX)
 	claim_texture = ClaimTexture.new()
@@ -57,10 +58,10 @@ func _create_claim_tile_spawner() -> void:
 
 
 func _create_reveal_screen() -> void:
-	_reveal_screen = ImageRevealScreen.new()
-	_reveal_screen.name = "RevealScreen"
-	add_child(_reveal_screen)
-	_reveal_screen.set_claim_mask(claim_texture.get_texture())
+	reveal_screen = ImageRevealScreen.new()
+	reveal_screen.name = "RevealScreen"
+	add_child(reveal_screen)
+	reveal_screen.set_claim_mask(claim_texture.get_texture())
 
 
 func _on_regions_claimed(_claimed: Array, _all: Array) -> void:
@@ -82,8 +83,8 @@ func refresh_claim_texture() -> void:
 
 ## Set the level image for the reveal screen. Pass null for placeholder.
 func set_level_image(texture: Texture2D) -> void:
-	if _reveal_screen:
-		_reveal_screen.set_level_image(texture)
+	if reveal_screen:
+		reveal_screen.set_level_image(texture)
 
 
 ## Convert board 2D coords (XZ) to 3D world position.

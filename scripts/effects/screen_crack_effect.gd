@@ -19,7 +19,13 @@ func setup(hit_position: Vector3) -> void:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+	# Render on top of the reveal screen regardless of geometry — the screen
+	# is now convex-bulged by image_reveal.gdshader's vertex pass, so a small
+	# z offset no longer guarantees the crack sits in front of the visible surface.
+	mat.no_depth_test = true
 	material_override = mat
+	# Ensure crack draws after the reveal screen when both have depth test off
+	sorting_offset = 1.0
 
 	# Position slightly in front of screen to avoid z-fighting
 	global_position = hit_position + Vector3(0.0, 0.0, 0.02)

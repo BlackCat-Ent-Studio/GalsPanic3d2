@@ -18,10 +18,15 @@ func _ready() -> void:
 
 
 func _create_mesh() -> void:
-	# QuadMesh is inherently vertical (XY plane), facing +Z (toward camera)
-	var quad := QuadMesh.new()
-	quad.size = Vector2(SCREEN_WIDTH, SCREEN_HEIGHT)
-	mesh = quad
+	# Subdivided PlaneMesh (FACE_Z) so the vertex shader can bend it into a
+	# horizontal cylindrical curve. FACE_Z matches old QuadMesh orientation:
+	# vertices lie in the XY plane facing +Z.
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(SCREEN_WIDTH, SCREEN_HEIGHT)
+	plane.subdivide_width = 32  # enough segments to sample the parabola smoothly
+	plane.subdivide_depth = 0   # horizontal curve only — no Y subdivision needed
+	plane.orientation = PlaneMesh.FACE_Z
+	mesh = plane
 	# Position: standing at back edge of board, facing toward camera
 	position = Vector3(0, SCREEN_Y_CENTER, SCREEN_Z)
 
@@ -35,6 +40,9 @@ func _create_shader() -> void:
 	# Placeholder gradient until real images added
 	_placeholder_texture = _generate_placeholder()
 	_shader_mat.set_shader_parameter("level_image", _placeholder_texture)
+	# Curved-screen vertex-displacement parameters (convex: center bulges toward camera)
+	_shader_mat.set_shader_parameter("curve_depth", 1.0)
+	_shader_mat.set_shader_parameter("half_width", SCREEN_WIDTH * 0.5)
 	material_override = _shader_mat
 
 

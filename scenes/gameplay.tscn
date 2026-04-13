@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://cgameplay001"]
+[gd_scene load_steps=6 format=3 uid="uid://cgameplay001"]
 
 [ext_resource type="Script" path="res://scripts/board/board.gd" id="1_board"]
 [ext_resource type="Script" path="res://scripts/gameplay_controller.gd" id="2_controller"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/effects/camera_shake.gd" id="4_shake"]
+[ext_resource type="Script" path="res://scripts/effects/camera_cinematic.gd" id="5_cinematic"]
 
 [node name="Gameplay" type="Node3D"]
 
@@ -17,6 +18,9 @@ current = true
 
 [node name="CameraShake" type="Node" parent="Camera3D"]
 script = ExtResource("4_shake")
+
+[node name="CameraCinematic" type="Node" parent="Camera3D"]
+script = ExtResource("5_cinematic")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 10, 0)
