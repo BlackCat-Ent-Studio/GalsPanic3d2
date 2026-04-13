@@ -5,32 +5,18 @@
 [resource]
 script = ExtResource("1_fq8ci")
 fireball_spawn_entries = [{
-"count": 2,
-"speed_level": 0,
-"type": "red"
-}, {
 "count": 1,
 "speed_level": 0,
-"type": "boss_ghost"
+"type": "boss_tank"
 }]
 fireball_placements = [{
-"position": Vector2(-2.0714283, 3.25),
-"radius": 0.25,
-"speed": 3.0,
-"type": "red"
-}, {
-"position": Vector2(3.7857141, 2.6785717),
-"radius": 0.25,
-"speed": 3.0,
-"type": "red"
-}, {
 "invisible_off_time": 5.0,
 "invisible_on_time": 10.0,
 "max_summons": 3,
-"position": Vector2(-1.6428576, -0.89285755),
+"position": Vector2(-3.642857, -3.25),
 "radius": 0.25,
 "speed": 3.0,
 "summon_interval": 8.0,
 "summon_type": "red",
-"type": "boss_ghost"
+"type": "boss_tank"
 }]

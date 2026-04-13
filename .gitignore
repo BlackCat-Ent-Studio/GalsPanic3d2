@@ -23,3 +23,6 @@ worktrees/
 
 # External repos
 external/
+
+# Accidental scaffold dir
+TemplateEmptyClaudeKit/
