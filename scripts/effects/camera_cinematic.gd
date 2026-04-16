@@ -133,9 +133,10 @@ func _process_tracking(delta: float) -> void:
 		_start_zoom_out()
 		return
 
-	# Smoothly rotate to follow the boss
+	# Exponential decay follow — frame-rate independent, natural drag feel
 	var target_rot := _compute_look_rotation(_tracked_boss.global_position)
-	_camera.rotation = _camera.rotation.lerp(target_rot, TRACK_SMOOTH_SPEED * delta)
+	var weight := 1.0 - exp(-TRACK_SMOOTH_SPEED * delta)
+	_camera.rotation = _camera.rotation.lerp(target_rot, weight)
 
 	_track_timer += delta
 	if _track_timer >= BOSS_TRACK_DURATION:
