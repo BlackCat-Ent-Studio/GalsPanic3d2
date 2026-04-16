@@ -7,6 +7,7 @@ var _wall_registry: WallRegistry
 
 func setup(registry: WallRegistry) -> void:
 	_wall_registry = registry
+	add_to_group("fireballs")
 
 
 ## Spawn fireballs from config entries: [{config: Resource, count: int}]
